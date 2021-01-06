@@ -1,0 +1,72 @@
+service: ${env:ServiceName}
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  stage: ${env:Stage}
+  region: ${env:Region}
+  runtime: python3.7
+  timeout: 600
+  memorySize: 1024
+  apiKeys:
+    - ${env:ServiceName}
+  apiGateway:
+    shouldStartNameWithService: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - "s3:*"
+        - "glue:*"
+      Resource: '*'
+  lambdaHashingVersion: '20201221'
+  tags:
+    developer: 'YuyaIsoda'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    slim: true
+    zip: true
+  environment:
+    dev: ${file(./env/dev.yml)}
+    prod: ${file(./env/prod.yml)}
+
+package:
+  include:
+    - aws_common.py
+    - handler.py
+    - h_conf.py
+    - h_backup_glue_catalog.py
+  exclude:
+    - '**'
+
+functions:
+  backup:
+    handler: handler.m_backup
+    description: 'Backup AWS Glue Data Catalog'
+    environment: ${self:custom.environment.${self:provider.stage}}
+    events:
+      - schedule: cron(0 9 ? * MON-FRI *)
+      - http:
+          path: aws/glue/datacatalog/backup
+          method: POST
+          private: true
+  restore:
+    handler: handler.m_restore
+    description: 'Restore AWS Glue Data Catalog'
+    environment: ${self:custom.environment.${self:provider.stage}}
+    events:
+      - http:
+          path: aws/glue/datacatalog/restore/{BackupDate}
+          method: POST
+          private: true
+
+resources:
+  Resources:
+    Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${env:Bucket}

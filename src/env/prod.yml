@@ -1,0 +1,2 @@
+Region: ${env:Region}
+Bucket: ${env:Bucket}

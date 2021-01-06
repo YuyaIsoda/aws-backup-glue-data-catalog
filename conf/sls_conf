@@ -1,0 +1,8 @@
+# Serverless Framework: Settings
+export ServiceName='aws-backup-glue-data-catalog'
+export SLSDIR='serverless'
+export Region='us-east-1'
+export Stage='dev'
+
+# Environment variable
+export Bucket='backup-glue-data-catalog-20200105' # AWS S3 Bucket Name
